@@ -22,7 +22,8 @@ def start_stream():
     client_socket, client_address = server_socket.accept() 
     print(f"Accepted connection from: {client_address}")
 
-    # file_path = client_socket.recv(1024).decode("utf-8")
+    file_path = client_socket.recv(1024).decode("utf-8")
+    play_wav(file_path=file_path, duration_s=5)
     while True:
         data = client_socket.recv(1024).decode("utf-8")
         if not data:
@@ -30,7 +31,6 @@ def start_stream():
         print(f"Received: {data}")
 
     # file_path = "dreams.wav"
-    # play_wav(file_path=file_path, duration_s=5)
 
     # Close the client and server sockets
     client_socket.close()

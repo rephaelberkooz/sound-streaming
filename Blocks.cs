@@ -29,57 +29,9 @@ public class BeatSaberBlockSpawner : MonoBehaviour
 
     private void Start()
     {
-        // initialize tcp connection (this is the server/sender)
-        // send start packet to client - client begins playing music
-        // StartCoroutine(TCP());
-        // TCP();
-
         StartCoroutine(Initialize());
     }
 // 2021.3.16
-    // private IEnumerator TCP()
-    // {
-    //     string serverIp = "127.0.0.1"; 
-    //     int serverPort = 8080; 
-    //     TcpClient client = null;
-    //     NetworkStream stream = null;
-
-
-    //     client = new TcpClient(serverIp, serverPort);
-    //     stream = client.GetStream();
-    //     // Convert the string message to bytes
-    //     byte[] data = Encoding.UTF8.GetBytes(filePath);
-
-    //     // Send the data over the network stream
-    //     stream.Write(data, 0, data.Length);
-
-    //     Debug.Log($"Sent: {filePath}");
-    //     yield return StartCoroutine(Initialize(stream));
-
-    
-    //     // Ensure that we properly close the client and stream, even if an exception occurs
-    //     stream?.Close();
-    //     client?.Close();
-        
-
-
-    //     // using (TcpClient client = new TcpClient(serverIp, serverPort))
-    //     // {
-    //     //     using (NetworkStream stream = client.GetStream())
-    //     //     {
-    //     //         // Convert the string message to bytes
-    //     //         byte[] data = Encoding.UTF8.GetBytes(filePath);
-
-    //     //         // Send the data over the network stream
-    //     //         stream.Write(data, 0, data.Length);
-
-    //     //         Debug.Log($"Sent: {filePath}");
-    //     //         StartCoroutine(Initialize(stream));
-
-    //     //     }
-    //     // }
-
-    // }
 
     private IEnumerator Initialize()
     {
@@ -130,6 +82,9 @@ public class BeatSaberBlockSpawner : MonoBehaviour
         client = new TcpClient(serverIp, serverPort);
         stream = client.GetStream();
 
+        byte[] filePathEncoded = Encoding.UTF8.GetBytes(filePath);
+        stream.Write(filePathEncoded, 0, filePathEncoded.Length);
+
         float startTime = Time.time;
 
         foreach (BeatSaberBlockData blockData in mapData._notes)
@@ -144,9 +99,9 @@ public class BeatSaberBlockSpawner : MonoBehaviour
                 yield return new WaitForSeconds(timeToWait);
             }
             
-            byte[] data = Encoding.UTF8.GetBytes($"targetTime: {targetTime}");
+            byte[] data = Encoding.UTF8.GetBytes($"targetTime: {targetTime}, location: {blockData._lineIndex * horizontalSpacing}, {blockData._lineLayer * verticalSpacing}, {15}");
             stream.Write(data, 0, data.Length);
-            Debug.Log($"Sent: {filePath}");
+            // Debug.Log($"Sent: {filePath}");
 
             SpawnBlock(blockData);
         }
