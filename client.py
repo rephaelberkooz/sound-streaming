@@ -21,7 +21,7 @@ def audio_stream():
 	CHUNK = 1024
 	stream = p.open(format=p.get_format_from_width(2),
 					channels=2,
-					rate=44100,
+					rate=48000,
 					output=True,
 					frames_per_buffer=CHUNK)
 					
@@ -34,11 +34,13 @@ def audio_stream():
 	data = b""
 	payload_size = struct.calcsize("Q")
 	while True:
+		# input()
 		try:
 			while len(data) < payload_size:
 				packet = client_socket.recv(4*1024) # 4K
-				if not packet: break
-				data+=packet
+				if not packet: 
+					break
+				data += packet
 			packed_msg_size = data[:payload_size]
 			data = data[payload_size:]
 			msg_size = struct.unpack("Q",packed_msg_size)[0]
