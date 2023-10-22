@@ -12,6 +12,7 @@ import struct
 
 # get the host's name and IP address
 host_ip = socket.gethostbyname(socket.gethostname())
+print(host_ip)
 port = 8080
 
 
