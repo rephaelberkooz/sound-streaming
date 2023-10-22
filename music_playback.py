@@ -22,13 +22,21 @@ def start_stream():
     client_socket, client_address = server_socket.accept() 
     print(f"Accepted connection from: {client_address}")
 
-    file_path = client_socket.recv(1024).decode("utf-8")
+    # file_path = client_socket.recv(1024).decode("utf-8")
+    while True:
+        data = client_socket.recv(1024).decode("utf-8")
+        if not data:
+            break  # Break the loop if the connection is closed
+        print(f"Received: {data}")
+
     # file_path = "dreams.wav"
-    play_wav(file_path=file_path, duration_s=5)
+    # play_wav(file_path=file_path, duration_s=5)
 
     # Close the client and server sockets
     client_socket.close()
     server_socket.close()
+
+
 # C:\\Users\\Sam\\Documents\\Beat Saber\\Beat Saber\\Assets\\Beat Saber_Regular Intervals(slow)_Aespa Dreams Come True_PANNED.wav
 def play_wav(file_path, duration_s):
     try:
