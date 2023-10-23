@@ -8,63 +8,63 @@ import struct
 import sounddevice as sd
 import soundfile as sf
 import queue
+import io
+from scipy.io.wavfile import read, write
+import numpy as np
 
 # host_ip = socket.gethostbyname(socket.gethostname())
 host_ip = "127.0.0.1"
 port = 8080
+framerate = 48000
+chunck_size = 1024
 
-class Playback_Thread(threading.Thread):
-    def __init__(self, file_name):
-        super().__init__()
-        self.coordinates_queue = queue.Queue()
-        self.file_name = file_name
+def playback(file_name, q_messages):
+    # instantiating the queue of quack chucks
+    q_quack = queue.Queue()
+    # using a quack sound for testing
+    quack = wave.open('quack48.wav', 'rb')
+    print(quack.getframerate())
+    while True:
+        chunck = quack.readframes(chunck_size)
+        if not chunck:
+            break
+        q_quack.put(chunck)
     
-    def playback(self):
-        wf = wave.open(self.file_name, 'rb')
-        framerate = 48000
-
-        chunck_size = 1024
-
-        p = pyaudio.PyAudio()
-        stream = p.open(format=p.get_format_from_width(2),
-                    channels=2,
-                    rate=framerate,
-                    output=True,
-                    frames_per_buffer=chunck_size)
-        
-        while True:
-            packet = wf.readframes(chunck_size)
-
-            if not self.coordinates_queue.empty():
-                print("message: ", self.coordinates_queue.get())
-                
-
-            stream.write(packet)
-
-def playback(file_name, q):
+    # opening the file name sent by the server
     wf = wave.open(file_name, 'rb')
-    framerate = 48000
-
-    chunck_size = 1024
 
     p = pyaudio.PyAudio()
-    stream = p.open(format=p.get_format_from_width(2),
+    stream = p.opengi(format=p.get_format_from_width(2),
                 channels=2,
                 rate=framerate,
                 output=True,
                 frames_per_buffer=chunck_size)
     
     while True:
-        packet = wf.readframes(chunck_size)
+        song_packet = wf.readframes(chunck_size)
+        # What I'd like to do here is convert the song_packet and the quack numpy arrays, and add them together to mix the sound
+        # if not q_quack.empty():
+            # song_numpy = np.frombuffer(packet, dtype="int16") * 0.5
+            # quack_numpy = np.frombuffer(quack.get(), dtype="int16") * 0.5
+            # mixed_sounds = song_numpy + quack_numpy
+            # buffer = io.BytesIO()
+            # write(buffer, framerate, mixed_sounds)
+            # stream.write(buffer.read())
+        # else:
 
-        if not q.empty():
-            print("message: ", q.get())
-        
-        stream.write(packet)
+        stream.write(song_packet)
 
 
 def recieve_stream():
-    q = queue.Queue()
+    # input_stream = pyaudio_input.open(format=pyaudio_input.get_format_from_width(quack.getsampwidth()),
+    #     # using 1 channel here since we are using Mac microphone which
+    #     # only has 1 channel input
+    #     channels=1,
+    #     rate=framerate,
+    #     input=True,
+    #     frames_per_buffer=chunck_size)
+    
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket_address = (host_ip, port)
     server_socket.bind(socket_address)
@@ -76,16 +76,17 @@ def recieve_stream():
 
 
     file_name = client_socket.recv(1024).decode("utf-8")
+    q_messages = queue.Queue()
 
     # playback_thread = Playback_Thread(file_name)
-    playback_thread = threading.Thread(target=playback, args=(file_name, q, ))
+    playback_thread = threading.Thread(target=playback, args=(file_name, q_messages, ))
     playback_thread.start()
     print('after playback start')
 
     
     while True:
         data = client_socket.recv(1024).decode("utf-8")
-        q.put(data)
+        q_messages.put(data)
         
         if not data:
             break  # Break the loop if the connection is closed
@@ -97,31 +98,6 @@ def recieve_stream():
 
 
     playback_thread.join()
-
-
-def play_wav(file_path, duration_s):
-    try:
-        # Read the WAV file
-        data, sample_rate = sf.read(file_path)
-        sample_rate = 48000
-
-        # Calculate the number of samples to play for the specified duration
-        num_samples_to_play = int(duration_s * sample_rate)
-
-        # Trim the audio data to the desired duration
-        audio_data_to_play = data[:num_samples_to_play]
-
-        # Play the audio data
-        sd.play(audio_data_to_play, sample_rate)
-        # sd.wait()  # Wait for the playback to finish
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-# def play_wav_chunks(file_name):
-
-
-
     
 
 if __name__ == "__main__":
