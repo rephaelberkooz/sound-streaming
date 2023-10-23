@@ -40,5 +40,6 @@ for _ in range(num_blocks):
 
     time.sleep(1)
     send_message_tcp(client_socket, coordinates)
+    print('sent', coordinates)
 
 client_socket.close()

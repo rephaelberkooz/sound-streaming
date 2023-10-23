@@ -18,8 +18,9 @@ class Playback_Thread(threading.Thread):
         super().__init__()
         self.coordinates_queue = queue.Queue()
         self.file_name = file_name
-
-        wf = wave.open(file_name, 'rb')
+    
+    def playback(self):
+        wf = wave.open(self.file_name, 'rb')
         framerate = 48000
 
         chunck_size = 1024
@@ -33,14 +34,37 @@ class Playback_Thread(threading.Thread):
         
         while True:
             packet = wf.readframes(chunck_size)
-            
+
             if not self.coordinates_queue.empty():
                 print("message: ", self.coordinates_queue.get())
-               
+                
 
             stream.write(packet)
 
+def playback(file_name, q):
+    wf = wave.open(file_name, 'rb')
+    framerate = 48000
+
+    chunck_size = 1024
+
+    p = pyaudio.PyAudio()
+    stream = p.open(format=p.get_format_from_width(2),
+                channels=2,
+                rate=framerate,
+                output=True,
+                frames_per_buffer=chunck_size)
+    
+    while True:
+        packet = wf.readframes(chunck_size)
+
+        if not q.empty():
+            print("message: ", q.get())
+        
+        stream.write(packet)
+
+
 def recieve_stream():
+    q = queue.Queue()
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket_address = (host_ip, port)
     server_socket.bind(socket_address)
@@ -50,34 +74,29 @@ def recieve_stream():
     client_socket, client_address = server_socket.accept() 
     print(f"Accepted connection from: {client_address}")
 
-    # Assuming the first packet contains the filename for music playback
-    file_path = client_socket.recv(1024).decode("utf-8")
-    # play_wav(file_path=file_path, duration_s=5)
-    wf = wave.open(file_path, 'rb')
-    framerate = 48000
 
-    chunck_size = 1024
+    file_name = client_socket.recv(1024).decode("utf-8")
 
-    p = pyaudio.PyAudio()
-    stream = p.open(format=p.get_format_from_width(2),
-                channels=2,
-                rate=48000,
-                output=True,
-                frames_per_buffer=chunck_size)
+    # playback_thread = Playback_Thread(file_name)
+    playback_thread = threading.Thread(target=playback, args=(file_name, q, ))
+    playback_thread.start()
+    print('after playback start')
+
     
     while True:
         data = client_socket.recv(1024).decode("utf-8")
-        packet = wf.readframes(chunck_size)
-        stream.write(packet)
+        q.put(data)
         
         if not data:
             break  # Break the loop if the connection is closed
-        print(f"Received: {data}")
 
 
     # Close the client and server sockets
     client_socket.close()
     server_socket.close()
+
+
+    playback_thread.join()
 
 
 def play_wav(file_path, duration_s):
@@ -106,11 +125,7 @@ def play_wav(file_path, duration_s):
     
 
 if __name__ == "__main__":
-    playback_thread = Playback_Thread("ln_Savanne.wav")
-    playback_thread.start()
-    playback_thread.join()
+    socket_thread = threading.Thread(target=recieve_stream)
+    socket_thread.start()
 
-    # t1 = threading.Thread(target=recieve_stream, args=())
-    # t1.start()
-    # play_wav("dreams.wav", 5)
-    # t1.join()
+    socket_thread.join()
