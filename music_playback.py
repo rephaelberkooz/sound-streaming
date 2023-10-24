@@ -23,7 +23,7 @@ def playback(file_name, q_messages):
     q_quack = queue.Queue()
     # using a quack sound for testing
     quack = wave.open('quack48.wav', 'rb')
-    print(quack.getframerate())
+    # print(quack.getframerate())
     while True:
         chunck = quack.readframes(chunck_size)
         if not chunck:
@@ -34,7 +34,7 @@ def playback(file_name, q_messages):
     wf = wave.open(file_name, 'rb')
 
     p = pyaudio.PyAudio()
-    stream = p.opengi(format=p.get_format_from_width(2),
+    stream = p.open(format=p.get_format_from_width(2),
                 channels=2,
                 rate=framerate,
                 output=True,
